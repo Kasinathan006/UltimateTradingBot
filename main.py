@@ -9,6 +9,23 @@ from core.db import TradeJournal
 from core.risk_manager import RiskManager
 from agents.chief_analyst import ChiefAnalystAgent
 
+from flask import Flask
+from threading import Thread
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return "Titan AI Trading Bot is ALIVE and RUNNING!"
+
+def run_server():
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 8080)))
+
+def keep_alive():
+    t = Thread(target=run_server)
+    t.daemon = True
+    t.start()
+
 # AI-Selected best pairs to scalp
 top_markets = [
     'ETH/USDT', 'BTC/USDT', 'SOL/USDT', 'XRP/USDT', 'ADA/USDT', 'AVAX/USDT'
@@ -16,6 +33,8 @@ top_markets = [
 
 def main():
     load_dotenv()
+    
+    keep_alive() # Start the dummy web server for Render health checks
     
     print("[*] Starting GOD MODE Multi-Exchange Titan Algo")
     print(f"[*] Environment: {'SANDBOX (Paper Trading)' if os.getenv('USE_SANDBOX', 'true').lower() == 'true' else 'LIVE (Real Money)'}")
