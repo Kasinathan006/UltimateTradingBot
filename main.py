@@ -26,6 +26,23 @@ def keep_alive():
     t.daemon = True
     t.start()
 
+def send_telegram_message(message):
+    token = os.getenv("TELEGRAM_BOT_TOKEN")
+    chat_id = os.getenv("TELEGRAM_CHAT_ID")
+    if not token or not chat_id:
+        return
+    url = f"https://api.telegram.org/bot{token}/sendMessage"
+    payload = {
+        "chat_id": chat_id,
+        "text": message,
+        "parse_mode": "HTML"
+    }
+    try:
+        import requests
+        requests.post(url, json=payload, timeout=5)
+    except Exception as e:
+        print(f"Telegram error: {e}")
+
 # AI-Selected best pairs to scalp
 top_markets = [
     'ETH/USDT', 'BTC/USDT', 'SOL/USDT', 'XRP/USDT', 'ADA/USDT', 'AVAX/USDT'
@@ -34,10 +51,12 @@ top_markets = [
 def main():
     load_dotenv()
     
-    keep_alive() # Start the dummy web server for Render health checks
+    keep_alive() # Start the dummy web server for Render/Railway health checks
     
-    print("[*] Starting GOD MODE Multi-Exchange Titan Algo")
-    print(f"[*] Environment: {'SANDBOX (Paper Trading)' if os.getenv('USE_SANDBOX', 'true').lower() == 'true' else 'LIVE (Real Money)'}")
+    env_mode = 'SANDBOX (Paper Trading)' if os.getenv('USE_SANDBOX', 'true').lower() == 'true' else 'LIVE (Real Money)'
+    startup_msg = f"🚀 <b>Titan AI Bot Started</b>\nEnvironment: {env_mode}"
+    print(startup_msg)
+    send_telegram_message(startup_msg)
     
     exchange_configs = {
         'binance': {
@@ -110,7 +129,9 @@ def main():
                         # Only execute a tiny amount for testing/safety
                         order, ex_id = multi_exchange.execute_trade(symbol, 'buy', qty)
                         if order:
-                            print(f"    [!] EXECUTED BUY on {ex_id.upper()}! Order details: {order['id']}")
+                            msg = f"✅ <b>EXECUTED BUY on {ex_id.upper()}</b>!\nPair: {symbol}\nPrice: {current_price}\nReason: {reason}"
+                            print(msg)
+                            send_telegram_message(msg)
                             db.log_trade(symbol, 'buy', qty, current_price, reason)
                         else:
                             print("    [X] Execution failed.")
